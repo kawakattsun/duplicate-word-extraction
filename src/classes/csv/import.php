@@ -1,28 +1,34 @@
 <?php
+declare(strict_types=1);
 
 namespace Csv;
 
-class Import
+class Import extends Load
 {
     const PARAMETER_DELIMITER = ':';
     const LABEL_PREFIX = 'DATA_';
+
     private $labelPrameterPattern = '/\[' . self::LABEL_PREFIX . '\d+\]:(?:\d+:?)*/';
-    // private $labelPattern = '/\[' . self::LABEL_PREFIX . '\d+\]:/';
     private $translateFilePath = TRANSLATEDIR . 'import.csv';
     private $translateData = [];
     private $translateLabelCounter = 0;
 
-    public function execute()
+    /**
+     * 翻訳リストからlabel変換したcsvへ文字列を挿入する
+     *
+     * @return void
+     */
+    public function execute(): void
     {
         \App\Cli::info('Start import CSV.');
         $this->loadImportCsv();
         $searchLabelNeedle = '[' . self::LABEL_PREFIX;
         foreach (glob(OUTPUTCSVDIR . '*.csv') as $path) {
             $file = new \SplFileObject($path);
+            $file->setFlags(\SplFileObject::READ_CSV);
             $fileName = $file->getFilename();
             $importCsvPath = IMPORTCSVDIR . $fileName;
             $this->createCsvFile($importCsvPath);
-            $file->setFlags(\SplFileObject::READ_CSV);
             $first = true;
             $readLineCount = 0;
             $translateColumnCount = 0;
@@ -37,13 +43,15 @@ class Import
                 }
                 $convertLine = [];
                 foreach ($line as $index => $column) {
-                    if (strpos($column, $searchLabelNeedle) === false) {
+                    // label化されていなければそのままコピー
+                    if (is_null($column) || strpos($column, $searchLabelNeedle) === false) {
                         $convertLine[$index] = $column;
                         continue;
                     }
                     preg_match($this->labelPrameterPattern, $column, $matches);
                     $labelAndParameters = explode(':', current($matches));
                     $label = array_shift($labelAndParameters);
+                    // label化されているが翻訳データが見つからない場合。labelのそのままコピー
                     if (empty($this->translateData[$label])) {
                         // \App\Cli::error('Not tralsrate label: ' . $label);
                         ++$notTralslateCount;
@@ -67,7 +75,12 @@ class Import
         \App\Cli::info('End import CSV.');
     }
 
-    private function loadImportCsv()
+    /**
+     * Load Import Csv.
+     *
+     * @return void
+     */
+    private function loadImportCsv(): void
     {
         $file = new \SplFileObject($this->translateFilePath);
         $file->setFlags(\SplFileObject::READ_CSV);
@@ -78,50 +91,5 @@ class Import
             $after = empty($line[2]) ? '' : $line[2];
             $this->translateData[$line[0]] = $after;
         }
-    }
-
-    /**
-     * CSVファイルに書き出す
-     *
-     * @param $records
-     */
-    private function writeCsv($filePath, $records)
-    {
-        $res = fopen($filePath, 'a');
-        fputcsv($res, $records);
-        fclose($res);
-    }
-
-    /**
-     * CSVファイルを作成する
-     *
-     * @return string
-     */
-    private function createCsvFile($filePath)
-    {
-        $res = fopen($filePath, 'w');
-        if ($res === false) {
-            \App\Cli::error('File create error. filePath: ' . $filePath);
-            exit;
-        }
-        fclose($res);
-    }
-
-    private function translateRegister($str)
-    {
-        if (isset($this->translateData[$str])) {
-            return $this->translateData[$str];
-        }
-        $strLabel = '[DATA_' . sprintf('%06d', $this->translateLabelCounter) . ']';
-        $this->translateData[$str] = $strLabel;
-        ++$this->translateLabelCounter;
-        $this->writeCsv($this->translateFilePath, [
-            $strLabel,
-            $str,
-        ]);
-        // \App\Cli::success('Registered word.');
-        // \App\Cli::default($strLabel . ' ' . $str);
-
-        return $strLabel;
     }
 }

@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 define('CSVDIR', HOMEPATH . 'storage' . DS . 'csv' . DS);
 define('EXCELDIR', HOMEPATH . 'storage' . DS . 'excel' . DS);
@@ -19,8 +20,14 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::create(HOMEPATH);
 $dotenv->load();
 
-
-function bootstrap($argv)
+/**
+ * Bootstrap.
+ *
+ * @param array $argv
+ *
+ * @return App\App
+ */
+function bootstrap(array $argv): App
 {
     return new App($argv);
 }

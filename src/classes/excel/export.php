@@ -45,7 +45,7 @@ class Export extends Load
                 $convertLine = [];
                 foreach ($line as $index => $column) {
                     // 日本語文字列が含まれていなければそのままコピー
-                    if (is_null($column) || strlen($column) === mb_strlen($column, 'utf8')) {
+                    if (strlen($column) === mb_strlen($column, 'utf8')) {
                         $convertLine[$index] = $column;
                         continue;
                     }
