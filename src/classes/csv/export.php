@@ -1,7 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Csv;
+
+use App\Cli;
+use App\File;
 
 class Export extends Load
 {
@@ -9,44 +13,38 @@ class Export extends Load
     const LABEL_PREFIX = 'DATA_';
     const PARAMETER_PATTERN = '/\d+(?:\.?\d+)?/';
 
-    private $translateFilePath = TRANSLATEDIR . 'translate.csv';
     private $translateData = [];
-    private $translateLabelCounter = 0;
 
     /**
      * csvから日本語が含まれるカラムを抽出し、
      * 翻訳対象リストとcsvの日本語文字列をlabelに変換したcsvを作成する。
      * - 日本語が含まれない場合はそのままコピー
-     * - 日本語文字列内の数値はパラメータ化する
-     *
-     * @return void
+     * - 日本語文字列内の数値はパラメータ化する.
      */
     public function execute(): void
     {
-        \App\Cli::info('Start export CSV.');
-        $this->createCsvFile($this->translateFilePath);
+        Cli::info('Start export CSV.');
+        $this->translateData = File::loadTranslateFile();
         foreach (glob(CSVDIR . '*.csv') as $path) {
             $file = new \SplFileObject($path);
             $file->setFlags(\SplFileObject::READ_CSV);
             $fileName = $file->getFilename();
             $outputCsvPath = OUTPUTCSVDIR . $fileName;
             $this->createCsvFile($outputCsvPath);
-            $first = true;
             $readLineCount = 0;
             $translateColumnCount = 0;
-            \App\Cli::info('Read csv: ' . $fileName);
-            foreach ($file as $line) {
+            Cli::info('Read csv: ' . $fileName);
+            foreach ($file as $line => $row) {
                 // 先頭行はカラム名のためそのままコピー
-                if ($first) {
-                    $this->writeCsv($outputCsvPath, $line);
-                    $first = false;
+                if ($line === 0) {
+                    $this->writeCsv($outputCsvPath, $row);
                     continue;
                 }
-                $convertLine = [];
-                foreach ($line as $index => $column) {
+                $convertRow = [];
+                foreach ($row as $index => $column) {
                     // 日本語文字列が含まれていなければそのままコピー
                     if (is_null($column) || strlen($column) === mb_strlen($column, 'utf8')) {
-                        $convertLine[$index] = $column;
+                        $convertRow[$index] = $column;
                         continue;
                     }
                     // 文字列に数値が含まれる場合はparameter化しておく
@@ -61,21 +59,21 @@ class Export extends Load
                     }
                     // 日本語文字列を翻訳リストに登録してlabel化したもので差し替え
                     $strLabel = $this->translateRegister($column);
-                    $convertLine[$index] = $strLabel . $parameter;
+                    $convertRow[$index] = $strLabel . $parameter;
                     ++$translateColumnCount;
-                };
-                $this->writeCsv($outputCsvPath, $convertLine);
+                }
+                $this->writeCsv($outputCsvPath, $convertRow);
                 ++$readLineCount;
             }
-            \App\Cli::success('Read line count: ' . $readLineCount);
-            \App\Cli::success('Translate column count: ' . $translateColumnCount);
+            Cli::success('Read line count: ' . $readLineCount);
+            Cli::success('Translate column count: ' . $translateColumnCount);
         }
-        \App\Cli::info('End export CSV.');
+        Cli::info('End export CSV.');
     }
 
     /**
      * 翻訳対象文言を登録する
-     * 登録済みの場合はlabelを返却する
+     * 登録済みの場合はlabelを返却する.
      *
      * @param string $str
      *
@@ -86,15 +84,19 @@ class Export extends Load
         if (isset($this->translateData[$str])) {
             return $this->translateData[$str];
         }
-        $strLabel = '[' . self::LABEL_PREFIX . sprintf('%06d', $this->translateLabelCounter) . ']';
+        if (empty($this->translateData)) {
+            $translateLabelCounter = 0;
+        } else {
+            $translateLabelCounter = (int) preg_replace('/[^0-9]/', '', end($this->translateData)) + 1;
+        }
+        $strLabel = '[' . self::LABEL_PREFIX . sprintf('%06d', $translateLabelCounter) . ']';
         $this->translateData[$str] = $strLabel;
-        ++$this->translateLabelCounter;
-        $this->writeCsv($this->translateFilePath, [
+        File::writeTranslateFile([
             $strLabel,
             $str,
         ]);
-        // \App\Cli::success('Registered word.');
-        // \App\Cli::default($strLabel . ' ' . $str);
+        // Cli::success('Registered word.');
+        // Cli::default($strLabel . ' ' . $str);
 
         return $strLabel;
     }

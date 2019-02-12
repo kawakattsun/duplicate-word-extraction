@@ -7,13 +7,13 @@ define('SRCPATH', HOMEPATH . 'src' . DS);
 define('VENDORPATH', HOMEPATH . 'vendor' . DS);
 require SRCPATH . 'bootstrap.php';
 
+use App\Cli;
+
 try {
     $app = bootstrap($argv);
     $app->run();
 } catch (Exception $e) {
-    App\Cli::error($e);
+    Cli::error($e);
 } catch (Throwable $e) {
-    App\Cli::error($e);
+    Cli::error($e);
 }
-
-

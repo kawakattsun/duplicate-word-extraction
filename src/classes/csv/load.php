@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Csv;
@@ -20,12 +21,10 @@ class Load
     }
 
     /**
-     * CSVファイルに書き出す
+     * CSVファイルに書き出す.
      *
      * @param string $filePath
-     * @param array $records
-     *
-     * @return void
+     * @param array  $records
      */
     protected function writeCsv(string $filePath, array $records): void
     {
@@ -35,11 +34,9 @@ class Load
     }
 
     /**
-     * CSVファイルを作成する
+     * CSVファイルを作成する.
      *
      * @param string $filePath
-     *
-     * @return void
      */
     protected function createCsvFile(string $filePath): void
     {

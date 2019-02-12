@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 define('CSVDIR', HOMEPATH . 'storage' . DS . 'csv' . DS);
@@ -12,7 +13,6 @@ define('IMPORTCSVDIR', IMPORTDIR . 'csv' . DS);
 define('IMPORTEXCELDIR', IMPORTDIR . 'excel' . DS);
 
 require VENDORPATH . 'autoload.php';
-require SRCPATH . 'autoload.php';
 
 use App\App;
 use Dotenv\Dotenv;

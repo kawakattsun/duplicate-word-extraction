@@ -1,7 +1,10 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Csv;
+
+use App\Cli;
 
 class Import extends Load
 {
@@ -9,18 +12,16 @@ class Import extends Load
     const LABEL_PREFIX = 'DATA_';
 
     private $labelPrameterPattern = '/\[' . self::LABEL_PREFIX . '\d+\]:(?:\d+:?)*/';
-    private $translateFilePath = TRANSLATEDIR . 'import.csv';
+    private $importFilePath = TRANSLATEDIR . 'import.csv';
     private $translateData = [];
     private $translateLabelCounter = 0;
 
     /**
-     * 翻訳リストからlabel変換したcsvへ文字列を挿入する
-     *
-     * @return void
+     * 翻訳リストからlabel変換したcsvへ文字列を挿入する.
      */
     public function execute(): void
     {
-        \App\Cli::info('Start import CSV.');
+        Cli::info('Start import CSV.');
         $this->loadImportCsv();
         $searchLabelNeedle = '[' . self::LABEL_PREFIX;
         foreach (glob(OUTPUTCSVDIR . '*.csv') as $path) {
@@ -33,7 +34,7 @@ class Import extends Load
             $readLineCount = 0;
             $translateColumnCount = 0;
             $notTralslateCount = 0;
-            \App\Cli::info('Read csv: ' . $fileName);
+            Cli::info('Read csv: ' . $fileName);
             foreach ($file as $no => $line) {
                 // 先頭行はカラム名
                 if ($first) {
@@ -53,7 +54,7 @@ class Import extends Load
                     $label = array_shift($labelAndParameters);
                     // label化されているが翻訳データが見つからない場合。labelのそのままコピー
                     if (empty($this->translateData[$label])) {
-                        // \App\Cli::error('Not tralsrate label: ' . $label);
+                        // Cli::error('Not tralsrate label: ' . $label);
                         ++$notTralslateCount;
                         $convertLine[$index] = $column;
                         continue;
@@ -64,25 +65,23 @@ class Import extends Load
                         ? sprintf($str, ...$parameters)
                         : $str;
                     ++$translateColumnCount;
-                };
+                }
                 $this->writeCsv($importCsvPath, $convertLine);
                 ++$readLineCount;
             }
-            \App\Cli::success('Read line count: ' . $readLineCount);
-            \App\Cli::success('Translate column count: ' . $translateColumnCount);
-            \App\Cli::success('Not translate label count: ' . $notTralslateCount);
+            Cli::success('Read line count: ' . $readLineCount);
+            Cli::success('Translate column count: ' . $translateColumnCount);
+            Cli::success('Not translate label count: ' . $notTralslateCount);
         }
-        \App\Cli::info('End import CSV.');
+        Cli::info('End import CSV.');
     }
 
     /**
      * Load Import Csv.
-     *
-     * @return void
      */
     private function loadImportCsv(): void
     {
-        $file = new \SplFileObject($this->translateFilePath);
+        $file = new \SplFileObject($this->importFilePath);
         $file->setFlags(\SplFileObject::READ_CSV);
         foreach ($file as $line) {
             if (empty($line[0])) {

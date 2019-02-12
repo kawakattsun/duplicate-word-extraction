@@ -1,13 +1,15 @@
 <?php
+
 declare(strict_types=1);
 
-namespace APP;
+namespace App;
 
 class App
 {
     private $argv;
 
-    public function __construct($argv) {
+    public function __construct($argv)
+    {
         $this->argv = $argv;
     }
 
@@ -24,7 +26,7 @@ class App
 
             default:
                 throw new \Exception('Not find argv.');
-        };
+        }
         $app->execute();
     }
 }
