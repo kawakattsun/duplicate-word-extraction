@@ -54,9 +54,10 @@ class File
             if (empty($line[0])) {
                 continue;
             }
-            $str = empty($line[2]) ? '' : $line[2];
+            $str = empty($line[1]) ? '' : $line[1];
             $translateData[$str] = $line[0];
         }
+        asort($translateData);
 
         return $translateData;
     }

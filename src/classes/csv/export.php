@@ -14,6 +14,7 @@ class Export extends Load
     const PARAMETER_PATTERN = '/\d+(?:\.?\d+)?/';
 
     private $translateData = [];
+    private $translateLabelCounter = 0;
 
     /**
      * csvから日本語が含まれるカラムを抽出し、
@@ -25,6 +26,9 @@ class Export extends Load
     {
         Cli::info('Start export CSV.');
         $this->translateData = File::loadTranslateFile();
+        if (!empty($this->translateData)) {
+            $this->translateLabelCounter = (int) preg_replace('/[^0-9]/', '', end($this->translateData)) + 1;
+        }
         foreach (glob(CSVDIR . '*.csv') as $path) {
             $file = new \SplFileObject($path);
             $file->setFlags(\SplFileObject::READ_CSV);
@@ -57,8 +61,12 @@ class Export extends Load
                         $column = preg_replace(self::PARAMETER_PATTERN, '%s', $column);
                         $parameter .= implode(self::PARAMETER_DELIMITER, current($matches));
                     }
-                    // 日本語文字列を翻訳リストに登録してlabel化したもので差し替え
-                    $strLabel = $this->translateRegister($column);
+                    $splitColumn = preg_split('/(?<=[、。])/u', $column, -1, PREG_SPLIT_NO_EMPTY);
+                    $strLabel = '';
+                    foreach ($splitColumn as $col) {
+                        // 日本語文字列を翻訳リストに登録してlabel化したもので差し替え
+                        $strLabel .= $this->translateRegister($col);
+                    }
                     $convertRow[$index] = $strLabel . $parameter;
                     ++$translateColumnCount;
                 }
@@ -84,17 +92,13 @@ class Export extends Load
         if (isset($this->translateData[$str])) {
             return $this->translateData[$str];
         }
-        if (empty($this->translateData)) {
-            $translateLabelCounter = 0;
-        } else {
-            $translateLabelCounter = (int) preg_replace('/[^0-9]/', '', end($this->translateData)) + 1;
-        }
-        $strLabel = '[' . self::LABEL_PREFIX . sprintf('%06d', $translateLabelCounter) . ']';
+        $strLabel = '[' . self::LABEL_PREFIX . sprintf('%06d', $this->translateLabelCounter) . ']';
         $this->translateData[$str] = $strLabel;
         File::writeTranslateFile([
             $strLabel,
             $str,
         ]);
+        ++$this->translateLabelCounter;
         // Cli::success('Registered word.');
         // Cli::default($strLabel . ' ' . $str);
 
