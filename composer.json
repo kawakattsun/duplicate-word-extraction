@@ -10,9 +10,9 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "src/classes/App/",
-            "Csv\\": "src/classes/Csv/",
-            "Excel\\" : "src/classes/Excel/"
+            "DuplicateWordExtraction\\App\\": "src/DuplicateWordExtraction/App/",
+            "DuplicateWordExtraction\\Csv\\": "src/DuplicateWordExtraction/Csv/",
+            "DuplicateWordExtraction\\Excel\\" : "src/DuplicateWordExtraction/Excel/"
         }
     },
     "scripts": {

@@ -2,19 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Csv;
+namespace DuplicateWordExtraction\Csv;
 
-use App\Cli;
-use App\File;
+use \DuplicateWordExtraction\App\Cli;
+use \DuplicateWordExtraction\App\Config;
+use \DuplicateWordExtraction\App\File;
+use \DuplicateWordExtraction\App\Load;
 
 class Export extends Load
 {
-    const PARAMETER_DELIMITER = ':';
-    const LABEL_PREFIX = 'DATA_';
     const PARAMETER_PATTERN = '/\d+(?:\.?\d+)?/';
-
-    private $translateData = [];
-    private $translateLabelCounter = 0;
+    const KUTEN_PATTERN = '/(?<=[、。])/u';
 
     /**
      * csvから日本語が含まれるカラムを抽出し、
@@ -25,83 +23,68 @@ class Export extends Load
     public function execute(): void
     {
         Cli::info('Start export CSV.');
-        $this->translateData = File::loadTranslateFile();
-        if (!empty($this->translateData)) {
-            $this->translateLabelCounter = (int) preg_replace('/[^0-9]/', '', end($this->translateData)) + 1;
-        }
         foreach (glob(CSVDIR . '*.csv') as $path) {
             $file = new \SplFileObject($path);
             $file->setFlags(\SplFileObject::READ_CSV);
             $fileName = $file->getFilename();
             $outputCsvPath = OUTPUTCSVDIR . $fileName;
-            $this->createCsvFile($outputCsvPath);
+            File::createFile($outputCsvPath);
             $readLineCount = 0;
             $translateColumnCount = 0;
             Cli::info('Read csv: ' . $fileName);
+            $columnNames = [];
             foreach ($file as $line => $row) {
                 // 先頭行はカラム名のためそのままコピー
                 if ($line === 0) {
-                    $this->writeCsv($outputCsvPath, $row);
+                    $columnNames = $row;
+                    File::writeCsv($outputCsvPath, $row);
                     continue;
                 }
                 $convertRow = [];
                 foreach ($row as $index => $column) {
                     // 日本語文字列が含まれていなければそのままコピー
-                    if (is_null($column) || strlen($column) === mb_strlen($column, 'utf8')) {
+                    if ($this->includeJa((string) $column)) {
                         $convertRow[$index] = $column;
                         continue;
                     }
+                    $this->before_strlen += mb_strlen($column, 'utf8');
                     // 文字列に数値が含まれる場合はparameter化しておく
                     $parameter = self::PARAMETER_DELIMITER;
-                    if (preg_match_all(self::PARAMETER_PATTERN, $column, $matches)) {
+                    if (Config::isPrameterColumn($fileName, $columnNames[$index]) &&
+                        preg_match_all(self::PARAMETER_PATTERN, $column, $matches)
+                    ) {
                         // 翻訳をデータを差し替える際にparameterはsprintfで挿入するため半角%をエスケープする
                         if (strpos($column, '%') !== false) {
                             $column = str_replace('%', '%%', $column);
                         }
                         $column = preg_replace(self::PARAMETER_PATTERN, '%s', $column);
                         $parameter .= implode(self::PARAMETER_DELIMITER, current($matches));
+                        $parameter .= self::PARAMETER_DELIMITER;
                     }
-                    $splitColumn = preg_split('/(?<=[、。])/u', $column, -1, PREG_SPLIT_NO_EMPTY);
                     $strLabel = '';
-                    foreach ($splitColumn as $col) {
-                        // 日本語文字列を翻訳リストに登録してlabel化したもので差し替え
-                        $strLabel .= $this->translateRegister($col);
+                    // 日本語文字列を翻訳リストに登録してlabel化したもので差し替え
+                    // 句点分割対象の場合は分割して登録
+                    if (Config::isSplitColumn($fileName, $columnNames[$index])) {
+                        $splitColumn = preg_split(self::KUTEN_PATTERN, $column, -1, PREG_SPLIT_NO_EMPTY);
+                        foreach ($splitColumn as $col) {
+                            $strLabel .= $this->translateRegister($col);
+                        }
+                    } else {
+                        [$str, $parameter] = $this->checkReturnAndSpace($column, $parameter);
+                        $strLabel .= $this->translateRegister($str);
                     }
                     $convertRow[$index] = $strLabel . $parameter;
                     ++$translateColumnCount;
                 }
-                $this->writeCsv($outputCsvPath, $convertRow);
+                File::writeCsv($outputCsvPath, $convertRow);
                 ++$readLineCount;
             }
             Cli::success('Read line count: ' . $readLineCount);
             Cli::success('Translate column count: ' . $translateColumnCount);
+
         }
+        Cli::success('Before string length: ' . $this->before_strlen);
+        Cli::success('After string length: ' . $this->after_strlen);
         Cli::info('End export CSV.');
-    }
-
-    /**
-     * 翻訳対象文言を登録する
-     * 登録済みの場合はlabelを返却する.
-     *
-     * @param string $str
-     *
-     * @return string
-     */
-    private function translateRegister(string $str): string
-    {
-        if (isset($this->translateData[$str])) {
-            return $this->translateData[$str];
-        }
-        $strLabel = '[' . self::LABEL_PREFIX . sprintf('%06d', $this->translateLabelCounter) . ']';
-        $this->translateData[$str] = $strLabel;
-        File::writeTranslateFile([
-            $strLabel,
-            $str,
-        ]);
-        ++$this->translateLabelCounter;
-        // Cli::success('Registered word.');
-        // Cli::default($strLabel . ' ' . $str);
-
-        return $strLabel;
     }
 }

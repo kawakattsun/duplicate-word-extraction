@@ -14,7 +14,7 @@ define('IMPORTEXCELDIR', IMPORTDIR . 'excel' . DS);
 
 require VENDORPATH . 'autoload.php';
 
-use App\App;
+use DuplicateWordExtraction\App\App;
 use Dotenv\Dotenv;
 
 $dotenv = Dotenv::create(HOMEPATH);

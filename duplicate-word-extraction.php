@@ -7,7 +7,7 @@ define('SRCPATH', HOMEPATH . 'src' . DS);
 define('VENDORPATH', HOMEPATH . 'vendor' . DS);
 require SRCPATH . 'bootstrap.php';
 
-use App\Cli;
+use DuplicateWordExtraction\App\Cli;
 
 try {
     $app = bootstrap($argv);

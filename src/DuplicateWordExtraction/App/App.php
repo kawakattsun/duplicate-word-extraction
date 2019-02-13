@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App;
+namespace DuplicateWordExtraction\App;
 
 class App
 {
@@ -17,11 +17,8 @@ class App
     {
         switch ($this->argv[1]) {
             case 'csv':
-                $app = \Csv\Load::getInstance($this->argv[2]);
-                break;
-
             case 'excel':
-                $app = \Excel\Load::getInstance($this->argv[2]);
+                $app = Load::getInstance($this->argv[1], $this->argv[2]);
                 break;
 
             default:

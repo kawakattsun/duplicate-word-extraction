@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Csv;
+namespace DuplicateWordExtraction\Csv;
 
-use App\Cli;
+use \DuplicateWordExtraction\App\Cli;
 
 class Import extends Load
 {
