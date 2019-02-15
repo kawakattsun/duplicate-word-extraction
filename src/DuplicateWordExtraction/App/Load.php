@@ -104,19 +104,20 @@ class Load
      */
     protected function checkReturnAndSpace(string $column, string $parameter = self::PARAMETER_DELIMITER): array
     {
-        $str = '';
-        $strArray = preg_split("//u", $column, -1, PREG_SPLIT_NO_EMPTY);
-        foreach ($strArray as $k => $v) {
-            if ($v === PHP_EOL) {
-                $parameter .= self::PARAMETER_RETURN . $k . self::PARAMETER_DELIMITER;
-                continue;
-            }
-            if ($v === ' ') {
-                $parameter .= self::PARAMETER_SPACE . $k . self::PARAMETER_DELIMITER;
-                continue;
-            }
-            $str .= $v;
-        }
+        // $str = '';
+        // $strArray = preg_split("//u", $column, -1, PREG_SPLIT_NO_EMPTY);
+        // foreach ($strArray as $k => $v) {
+        //     if ($v === PHP_EOL) {
+        //         $parameter .= self::PARAMETER_RETURN . $k . self::PARAMETER_DELIMITER;
+        //         continue;
+        //     }
+        //     if ($v === ' ') {
+        //         $parameter .= self::PARAMETER_SPACE . $k . self::PARAMETER_DELIMITER;
+        //         continue;
+        //     }
+        //     $str .= $v;
+        // }
+        $str = $column;
 
         return [$str, $parameter];
     }
